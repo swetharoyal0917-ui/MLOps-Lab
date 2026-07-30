@@ -1,0 +1,121 @@
+# PIPELINE DEFINITION
+# Name: simple-ml-pipeline
+# Description: Simple ML Pipeline using Kubeflow
+components:
+  comp-load-data:
+    executorLabel: exec-load-data
+    outputDefinitions:
+      parameters:
+        X:
+          parameterType: LIST
+        y:
+          parameterType: LIST
+  comp-train-model:
+    executorLabel: exec-train-model
+    inputDefinitions:
+      parameters:
+        X:
+          parameterType: LIST
+        y:
+          parameterType: LIST
+deploymentSpec:
+  executors:
+    exec-load-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - load_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.6.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef load_data() -> NamedTuple(\"Outputs\", [(\"X\", list), (\"y\"\
+          , list)]):\n\n    from sklearn.datasets import load_iris\n\n    data = load_iris()\n\
+          \n    X = data.data.tolist()\n    y = data.target.tolist()\n\n    from collections\
+          \ import namedtuple\n\n    outputs = namedtuple(\"Outputs\", [\"X\", \"\
+          y\"])\n\n    print(\"Dataset loaded successfully\")\n\n    return outputs(X,\
+          \ y)\n\n"
+        image: python:3.11
+    exec-train-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_model
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.6.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'scikit-learn'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_model(X: list, y: list):\n\n    from sklearn.linear_model\
+          \ import LogisticRegression\n\n    model = LogisticRegression(max_iter=200)\n\
+          \n    model.fit(X, y)\n\n    print(\"Model trained successfully\")\n\n"
+        image: python:3.11
+pipelineInfo:
+  description: Simple ML Pipeline using Kubeflow
+  name: simple-ml-pipeline
+root:
+  dag:
+    tasks:
+      load-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-load-data
+        taskInfo:
+          name: load-data
+      train-model:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-model
+        dependentTasks:
+        - load-data
+        inputs:
+          parameters:
+            X:
+              taskOutputParameter:
+                outputParameterKey: X
+                producerTask: load-data
+            y:
+              taskOutputParameter:
+                outputParameterKey: y
+                producerTask: load-data
+        taskInfo:
+          name: train-model
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.6.0
