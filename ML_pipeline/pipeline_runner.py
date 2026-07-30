@@ -1,3 +1,4 @@
+import os
 from data_loading import load_data
 from preprocessing import preprocess_data
 from feature_engineering import feature_engineering
@@ -21,4 +22,7 @@ def run_pipeline(file_path):
 
 
 if __name__ == "__main__":
-    run_pipeline("../Data/Telecom Customer Churn.csv")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DATA_PATH = os.path.join(BASE_DIR, "..", "Data", "Telecom Customer Churn.csv")
+
+    run_pipeline(DATA_PATH)
