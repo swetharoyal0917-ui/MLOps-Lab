@@ -3,3 +3,7 @@ numpy
 scikit-learn
 mlflow
 joblib
+fastapi
+uvicorn
+pytest
+httpx
