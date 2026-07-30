@@ -13,7 +13,7 @@ def test_home():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {
-        "message": "CI Pipeline working successfully"
+        "message": "Advanced Testing Pipeline is running"
     }
 
 
@@ -22,4 +22,12 @@ def test_health():
     assert response.status_code == 200
     assert response.json() == {
         "status": "Healthy"
+    }
+
+
+def test_deploy():
+    response = client.get("/deploy")
+    assert response.status_code == 200
+    assert response.json() == {
+        "deployment": "Application deployed successfully"
     }

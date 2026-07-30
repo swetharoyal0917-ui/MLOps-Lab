@@ -42,6 +42,12 @@ def health():
         "status": "Healthy"
     }
 
+@app.get("/deploy")
+def deploy():
+    return {
+        "deployment": "Application deployed successfully"
+    }
+
 
 @app.get("/metrics")
 def get_metrics():
