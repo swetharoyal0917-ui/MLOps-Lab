@@ -48,6 +48,12 @@ def deploy():
         "deployment": "Application deployed successfully"
     }
 
+@app.get("/automation")
+def automation():
+    return {
+        "automation": "Automation completed successfully"
+    }
+
 
 @app.get("/metrics")
 def get_metrics():
